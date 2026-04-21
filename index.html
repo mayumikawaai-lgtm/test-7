@@ -11,13 +11,40 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");
 }
 </script>
-<body>
-  <h1>Arabic Flashcards</h1>
-  <p>It works.</p>
-  <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
+<body style="font-family: sans-serif; text-align: center; padding: 40px;">
+
+<h1>Arabic Flashcards</h1>
+
+<input id="english" placeholder="English"><br><br>
+<input id="arabic" placeholder="Arabic"><br><br>
+
+<button onclick="addCard()">Add Card</button>
+
+<h2>Cards</h2>
+<div id="cards"></div>
+
+<script>
+let cards = JSON.parse(localStorage.getItem("cards") || "[]");
+
+function save() {
+  localStorage.setItem("cards", JSON.stringify(cards));
 }
+
+function addCard() {
+  const en = document.getElementById("english").value;
+  const ar = document.getElementById("arabic").value;
+  cards.push({en, ar});
+  save();
+  render();
+}
+
+function render() {
+  const div = document.getElementById("cards");
+  div.innerHTML = cards.map(c => `<p>${c.en} → ${c.ar}</p>`).join("");
+}
+
+render();
 </script>
+
 </body>
 </html>
