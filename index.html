@@ -6,12 +6,7 @@
   <title>Arabic Flashcards</title>
   <link rel="manifest" href="/manifest.json" />
 </head>
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
-}
-</script>
-<body style="font-family: sans-serif; text-align: center; padding: 40px;">
+<body>
 
 <h1>Arabic Flashcards</h1>
 
@@ -22,6 +17,7 @@ if ("serviceWorker" in navigator) {
 
 <h2>Cards</h2>
 <div id="cards"></div>
+<div id="list"></div>
 
 <script>
 let cards = JSON.parse(localStorage.getItem("cards") || "[]");
@@ -33,10 +29,14 @@ function save() {
 }
 
 function addCard() {
-  const en = document.getElementById("english").value;
-  const ar = document.getElementById("arabic").value;
+  const en = document.getElementById("english").value.trim();
+  const ar = document.getElementById("arabic").value.trim();
   if (!en || !ar) return;
-  cards.push({en, ar});
+  cards.push({ en, ar });
+  document.getElementById("english").value = "";
+  document.getElementById("arabic").value = "";
+  current = cards.length - 1;
+  showingEnglish = true;
   save();
   render();
 }
@@ -49,15 +49,27 @@ function nextCard() {
 }
 
 function flipCard() {
+  if (cards.length === 0) return;
   showingEnglish = !showingEnglish;
+  render();
+}
+
+function deleteCurrentCard() {
+  if (cards.length === 0) return;
+  cards.splice(current, 1);
+  if (current >= cards.length) current = 0;
+  showingEnglish = true;
+  save();
   render();
 }
 
 function render() {
   const div = document.getElementById("cards");
+  const list = document.getElementById("list");
 
   if (cards.length === 0) {
     div.innerHTML = "<p>No cards yet</p>";
+    list.innerHTML = "";
     return;
   }
 
@@ -69,7 +81,13 @@ function render() {
     </div>
     <button onclick="flipCard()">Flip</button>
     <button onclick="nextCard()">Next</button>
+    <button onclick="deleteCurrentCard()">Delete</button>
+    <p>${current + 1} / ${cards.length}</p>
   `;
+
+  list.innerHTML = cards
+    .map((c, i) => `<p>${i + 1}. ${c.en} → ${c.ar}</p>`)
+    .join("");
 }
 
 render();
