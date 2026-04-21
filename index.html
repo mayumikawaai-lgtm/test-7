@@ -6,6 +6,11 @@
   <title>Arabic Flashcards</title>
   <link rel="manifest" href="/manifest.json" />
 </head>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
+}
+</script>
 <body>
   <h1>Arabic Flashcards</h1>
   <p>It works.</p>
