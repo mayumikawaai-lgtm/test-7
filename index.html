@@ -25,6 +25,8 @@ if ("serviceWorker" in navigator) {
 
 <script>
 let cards = JSON.parse(localStorage.getItem("cards") || "[]");
+let current = 0;
+let showingEnglish = true;
 
 function save() {
   localStorage.setItem("cards", JSON.stringify(cards));
@@ -33,18 +35,44 @@ function save() {
 function addCard() {
   const en = document.getElementById("english").value;
   const ar = document.getElementById("arabic").value;
+  if (!en || !ar) return;
   cards.push({en, ar});
   save();
   render();
 }
 
+function nextCard() {
+  if (cards.length === 0) return;
+  current = (current + 1) % cards.length;
+  showingEnglish = true;
+  render();
+}
+
+function flipCard() {
+  showingEnglish = !showingEnglish;
+  render();
+}
+
 function render() {
   const div = document.getElementById("cards");
-  div.innerHTML = cards.map(c => `<p>${c.en} → ${c.ar}</p>`).join("");
+
+  if (cards.length === 0) {
+    div.innerHTML = "<p>No cards yet</p>";
+    return;
+  }
+
+  const card = cards[current];
+
+  div.innerHTML = `
+    <div style="font-size: 24px; margin: 20px;">
+      ${showingEnglish ? card.en : card.ar}
+    </div>
+    <button onclick="flipCard()">Flip</button>
+    <button onclick="nextCard()">Next</button>
+  `;
 }
 
 render();
 </script>
-
 </body>
 </html>
