@@ -1,115 +1,528 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Arabic Flashcards</title>
   <link rel="manifest" href="/manifest.json" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .app {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+
+    h1, h2 {
+      text-align: center;
+    }
+
+    h3 {
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    input, button, select, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      margin-bottom: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      background: #222;
+      color: white;
+    }
+
+    button.secondary {
+      background: #666;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .card-box {
+      margin-top: 20px;
+      padding: 30px;
+      border: 2px solid #333;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 30px;
+      background: #fafafa;
+    }
+
+    .small {
+      font-size: 14px;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .list {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .list-item {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .section-box {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      background: #fafafa;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 700px) {
+      .grid-2, .grid-3, .grid-4, .actions {
+        grid-template-columns: 1fr;
+      }
+
+      .card-box {
+        font-size: 24px;
+        padding: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="app">
+    <h1>Arabic Flashcards</h1>
 
-<h1>Arabic Flashcards</h1>
+    <select id="wordType" onchange="updateFormSections()">
+      <option value="noun">Noun</option>
+      <option value="adjective">Adjective</option>
+      <option value="verb">Verb</option>
+    </select>
 
-<input id="english" placeholder="English"><br><br>
-<input id="arabic" placeholder="Arabic"><br><br>
-<input id="category" placeholder="Category (e.g. food, travel)"><br><br>
-<button onclick="addCard()">Add Card</button>
+    <div class="grid-2">
+      <input id="baseEnglish" placeholder="Base English (example: chair / big / write)" />
+      <input id="baseArabic" placeholder="Base Arabic" />
+    </div>
 
-<h2>Cards</h2>
-<div id="cards"></div>
-<div id="list"></div>
+    <input id="category" placeholder="Category (example: home, travel, work)" />
 
-<script>
-let cards = JSON.parse(localStorage.getItem("cards") || "[]");
-let current = 0;
-let showingEnglish = true;
+    <div id="nounSection" class="section-box">
+      <h3>Noun forms</h3>
+      <div class="grid-2">
+        <input id="noun1en" placeholder="1 item English" />
+        <input id="noun1ar" placeholder="1 item Arabic" />
+        <input id="noun2en" placeholder="2 items English" />
+        <input id="noun2ar" placeholder="2 items Arabic" />
+        <input id="noun3en" placeholder="3 items English" />
+        <input id="noun3ar" placeholder="3 items Arabic" />
+        <input id="noun4en" placeholder="4–10 items English" />
+        <input id="noun4ar" placeholder="4–10 items Arabic" />
+      </div>
+    </div>
 
-function save() {
-  localStorage.setItem("cards", JSON.stringify(cards));
-}
+    <div id="adjectiveSection" class="section-box hidden">
+      <h3>Adjective forms</h3>
+      <div class="grid-2">
+        <input id="adjMen" placeholder="Masculine English" />
+        <input id="adjMar" placeholder="Masculine Arabic" />
+        <input id="adjFen" placeholder="Feminine English" />
+        <input id="adjFar" placeholder="Feminine Arabic" />
+      </div>
+    </div>
 
-function addCard() {
-  const en = document.getElementById("english").value.trim();
-  const ar = document.getElementById("arabic").value.trim();
-  if (!en || !ar) return;
-  const cat = document.getElementById("category").value || "general";
-  cards.push({ en, ar, cat });
-  document.getElementById("english").value = "";
-  document.getElementById("arabic").value = "";
-  current = cards.length - 1;
-  showingEnglish = true;
-  save();
-  render();
-}
+    <div id="verbSection" class="section-box hidden">
+      <h3>Verb forms</h3>
 
-function nextCard() {
-  if (cards.length === 0) return;
-  current = (current + 1) % cards.length;
-  showingEnglish = true;
-  render();
-}
+      <h3>Present</h3>
+      <div class="grid-2">
+        <input id="pres_i_en" placeholder="I - English" />
+        <input id="pres_i_ar" placeholder="I - Arabic" />
 
-function flipCard() {
-  if (cards.length === 0) return;
-  showingEnglish = !showingEnglish;
-  render();
-}
+        <input id="pres_youm_en" placeholder="you (m) - English" />
+        <input id="pres_youm_ar" placeholder="you (m) - Arabic" />
 
-function deleteCurrentCard() {
-  if (cards.length === 0) return;
-  cards.splice(current, 1);
-  if (current >= cards.length) current = 0;
-  showingEnglish = true;
-  save();
-  render();
-}
+        <input id="pres_youf_en" placeholder="you (f) - English" />
+        <input id="pres_youf_ar" placeholder="you (f) - Arabic" />
 
-function render() {
-  const div = document.getElementById("cards");
-  const list = document.getElementById("list");
+        <input id="pres_youpl_en" placeholder="you (pl) - English" />
+        <input id="pres_youpl_ar" placeholder="you (pl) - Arabic" />
 
-  if (cards.length === 0) {
-    div.innerHTML = "<p>No cards yet</p>";
-    list.innerHTML = "";
-    return;
-  }
+        <input id="pres_we_en" placeholder="we - English" />
+        <input id="pres_we_ar" placeholder="we - Arabic" />
 
-  const card = cards[current];
+        <input id="pres_he_en" placeholder="he - English" />
+        <input id="pres_he_ar" placeholder="he - Arabic" />
 
-  div.innerHTML = `
-    <div style="font-size: 24px; margin: 20px;">
-      div.innerHTML = `
-  <div style="
-    font-size: 32px;
-    margin: 40px;
-    padding: 30px;
-    border: 2px solid #333;
-    border-radius: 12px;
-    text-align: center;
-  ">
-    ${showingEnglish ? card.en : card.ar}
-    <br><small>(${card.cat})</small>
+        <input id="pres_she_en" placeholder="she - English" />
+        <input id="pres_she_ar" placeholder="she - Arabic" />
+
+        <input id="pres_they_en" placeholder="they - English" />
+        <input id="pres_they_ar" placeholder="they - Arabic" />
+      </div>
+
+      <h3>Past</h3>
+      <div class="grid-2">
+        <input id="past_i_en" placeholder="I - English" />
+        <input id="past_i_ar" placeholder="I - Arabic" />
+
+        <input id="past_youm_en" placeholder="you (m) - English" />
+        <input id="past_youm_ar" placeholder="you (m) - Arabic" />
+
+        <input id="past_youf_en" placeholder="you (f) - English" />
+        <input id="past_youf_ar" placeholder="you (f) - Arabic" />
+
+        <input id="past_youpl_en" placeholder="you (pl) - English" />
+        <input id="past_youpl_ar" placeholder="you (pl) - Arabic" />
+
+        <input id="past_we_en" placeholder="we - English" />
+        <input id="past_we_ar" placeholder="we - Arabic" />
+
+        <input id="past_he_en" placeholder="he - English" />
+        <input id="past_he_ar" placeholder="he - Arabic" />
+
+        <input id="past_she_en" placeholder="she - English" />
+        <input id="past_she_ar" placeholder="she - Arabic" />
+
+        <input id="past_they_en" placeholder="they - English" />
+        <input id="past_they_ar" placeholder="they - Arabic" />
+      </div>
+    </div>
+
+    <button onclick="addCard()">Add Card</button>
+
+    <div class="grid-2">
+      <select id="filterCategory" onchange="render()">
+        <option value="all">All categories</option>
+      </select>
+
+      <select id="studySide" onchange="render()">
+        <option value="en">English first</option>
+        <option value="ar">Arabic first</option>
+      </select>
+    </div>
+
+    <h2>Study Card</h2>
+    <div id="cards"></div>
+
+    <h2>All Cards</h2>
+    <div id="list" class="list"></div>
   </div>
 
-  <button onclick="flipCard()">Flip</button>
-  <button onclick="nextCard()">Next</button>
-  <button onclick="deleteCurrentCard()">Delete</button>
+  <script>
+    let cards = JSON.parse(localStorage.getItem("cards") || "[]");
+    let current = 0;
+    let showingFront = true;
 
-  <p>${current + 1} / ${cards.length}</p>
-`;
-    </div>
-    <button onclick="flipCard()">Flip</button>
-    <button onclick="nextCard()">Next</button>
-    <button onclick="deleteCurrentCard()">Delete</button>
-    <p>${current + 1} / ${cards.length}</p>
-  `;
+    const verbPronouns = [
+      "i", "youm", "youf", "youpl", "we", "he", "she", "they"
+    ];
 
-  list.innerHTML = cards
-    .map((c, i) => `<p>${i + 1}. ${c.en} → ${c.ar} (${c.cat})</p>`)
-    .join("");
-}
+    function save() {
+      localStorage.setItem("cards", JSON.stringify(cards));
+    }
 
-render();
-</script>
+    function updateFormSections() {
+      const type = document.getElementById("wordType").value;
+      document.getElementById("nounSection").classList.toggle("hidden", type !== "noun");
+      document.getElementById("adjectiveSection").classList.toggle("hidden", type !== "adjective");
+      document.getElementById("verbSection").classList.toggle("hidden", type !== "verb");
+    }
+
+    function getFilteredCards() {
+      const selected = document.getElementById("filterCategory").value;
+      if (selected === "all") return cards;
+      return cards.filter(card => (card.category || "general") === selected);
+    }
+
+    function updateCategoryFilter() {
+      const select = document.getElementById("filterCategory");
+      const currentValue = select.value;
+      const categories = [...new Set(cards.map(c => c.category || "general"))].sort();
+
+      select.innerHTML = `<option value="all">All categories</option>`;
+      categories.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+      });
+
+      if ([...select.options].some(o => o.value === currentValue)) {
+        select.value = currentValue;
+      } else {
+        select.value = "all";
+      }
+    }
+
+    function addCard() {
+      const type = document.getElementById("wordType").value;
+      const baseEnglish = document.getElementById("baseEnglish").value.trim();
+      const baseArabic = document.getElementById("baseArabic").value.trim();
+      const category = document.getElementById("category").value.trim() || "general";
+
+      if (!baseEnglish || !baseArabic) {
+        alert("Please enter base English and base Arabic.");
+        return;
+      }
+
+      let card = {
+        type,
+        baseEnglish,
+        baseArabic,
+        category
+      };
+
+      if (type === "noun") {
+        card.forms = {
+          one: {
+            en: document.getElementById("noun1en").value.trim(),
+            ar: document.getElementById("noun1ar").value.trim()
+          },
+          two: {
+            en: document.getElementById("noun2en").value.trim(),
+            ar: document.getElementById("noun2ar").value.trim()
+          },
+          three: {
+            en: document.getElementById("noun3en").value.trim(),
+            ar: document.getElementById("noun3ar").value.trim()
+          },
+          fourToTen: {
+            en: document.getElementById("noun4en").value.trim(),
+            ar: document.getElementById("noun4ar").value.trim()
+          }
+        };
+      }
+
+      if (type === "adjective") {
+        card.forms = {
+          masculine: {
+            en: document.getElementById("adjMen").value.trim(),
+            ar: document.getElementById("adjMar").value.trim()
+          },
+          feminine: {
+            en: document.getElementById("adjFen").value.trim(),
+            ar: document.getElementById("adjFar").value.trim()
+          }
+        };
+      }
+
+      if (type === "verb") {
+        card.forms = {
+          present: {},
+          past: {}
+        };
+
+        verbPronouns.forEach(p => {
+          card.forms.present[p] = {
+            en: document.getElementById(`pres_${p}_en`).value.trim(),
+            ar: document.getElementById(`pres_${p}_ar`).value.trim()
+          };
+          card.forms.past[p] = {
+            en: document.getElementById(`past_${p}_en`).value.trim(),
+            ar: document.getElementById(`past_${p}_ar`).value.trim()
+          };
+        });
+      }
+
+      cards.push(card);
+      clearForm();
+      current = getFilteredCards().length;
+      showingFront = true;
+
+      save();
+      updateCategoryFilter();
+      render();
+    }
+
+    function clearForm() {
+      document.getElementById("baseEnglish").value = "";
+      document.getElementById("baseArabic").value = "";
+      document.getElementById("category").value = "";
+
+      [
+        "noun1en","noun1ar","noun2en","noun2ar","noun3en","noun3ar","noun4en","noun4ar",
+        "adjMen","adjMar","adjFen","adjFar"
+      ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+
+      verbPronouns.forEach(p => {
+        document.getElementById(`pres_${p}_en`).value = "";
+        document.getElementById(`pres_${p}_ar`).value = "";
+        document.getElementById(`past_${p}_en`).value = "";
+        document.getElementById(`past_${p}_ar`).value = "";
+      });
+    }
+
+    function nextCard() {
+      const filtered = getFilteredCards();
+      if (filtered.length === 0) return;
+      current = (current + 1) % filtered.length;
+      showingFront = true;
+      render();
+    }
+
+    function flipCard() {
+      const filtered = getFilteredCards();
+      if (filtered.length === 0) return;
+      showingFront = !showingFront;
+      render();
+    }
+
+    function deleteCurrentCard() {
+      const filtered = getFilteredCards();
+      if (filtered.length === 0) return;
+
+      const cardToDelete = filtered[current];
+      const realIndex = cards.indexOf(cardToDelete);
+
+      if (realIndex !== -1) {
+        cards.splice(realIndex, 1);
+      }
+
+      const newFiltered = getFilteredCards();
+      if (current >= newFiltered.length) current = 0;
+      showingFront = true;
+
+      save();
+      updateCategoryFilter();
+      render();
+    }
+
+    function getFrontText(card) {
+      const side = document.getElementById("studySide").value;
+      return side === "en" ? card.baseEnglish : card.baseArabic;
+    }
+
+    function getBackHtml(card) {
+      const side = document.getElementById("studySide").value;
+      const first = side === "en" ? "en" : "ar";
+      const second = side === "en" ? "ar" : "en";
+
+      if (card.type === "noun") {
+        return `
+          <div><strong>1:</strong> ${card.forms.one[first]} → ${card.forms.one[second]}</div>
+          <div><strong>2:</strong> ${card.forms.two[first]} → ${card.forms.two[second]}</div>
+          <div><strong>3:</strong> ${card.forms.three[first]} → ${card.forms.three[second]}</div>
+          <div><strong>4–10:</strong> ${card.forms.fourToTen[first]} → ${card.forms.fourToTen[second]}</div>
+        `;
+      }
+
+      if (card.type === "adjective") {
+        return `
+          <div><strong>Masculine:</strong> ${card.forms.masculine[first]} → ${card.forms.masculine[second]}</div>
+          <div><strong>Feminine:</strong> ${card.forms.feminine[first]} → ${card.forms.feminine[second]}</div>
+        `;
+      }
+
+      return `
+        <div><strong>Present</strong></div>
+        <div>I: ${card.forms.present.i[first]} → ${card.forms.present.i[second]}</div>
+        <div>you (m): ${card.forms.present.youm[first]} → ${card.forms.present.youm[second]}</div>
+        <div>you (f): ${card.forms.present.youf[first]} → ${card.forms.present.youf[second]}</div>
+        <div>you (pl): ${card.forms.present.youpl[first]} → ${card.forms.present.youpl[second]}</div>
+        <div>we: ${card.forms.present.we[first]} → ${card.forms.present.we[second]}</div>
+        <div>he: ${card.forms.present.he[first]} → ${card.forms.present.he[second]}</div>
+        <div>she: ${card.forms.present.she[first]} → ${card.forms.present.she[second]}</div>
+        <div>they: ${card.forms.present.they[first]} → ${card.forms.present.they[second]}</div>
+        <br>
+        <div><strong>Past</strong></div>
+        <div>I: ${card.forms.past.i[first]} → ${card.forms.past.i[second]}</div>
+        <div>you (m): ${card.forms.past.youm[first]} → ${card.forms.past.youm[second]}</div>
+        <div>you (f): ${card.forms.past.youf[first]} → ${card.forms.past.youf[second]}</div>
+        <div>you (pl): ${card.forms.past.youpl[first]} → ${card.forms.past.youpl[second]}</div>
+        <div>we: ${card.forms.past.we[first]} → ${card.forms.past.we[second]}</div>
+        <div>he: ${card.forms.past.he[first]} → ${card.forms.past.he[second]}</div>
+        <div>she: ${card.forms.past.she[first]} → ${card.forms.past.she[second]}</div>
+        <div>they: ${card.forms.past.they[first]} → ${card.forms.past.they[second]}</div>
+      `;
+    }
+
+    function render() {
+      const div = document.getElementById("cards");
+      const list = document.getElementById("list");
+      const filtered = getFilteredCards();
+
+      if (filtered.length === 0) {
+        div.innerHTML = "<p>No cards yet</p>";
+        list.innerHTML = cards.length === 0 ? "<p>No cards saved yet</p>" : "<p>No cards in this category</p>";
+        return;
+      }
+
+      if (current >= filtered.length) current = 0;
+
+      const card = filtered[current];
+
+      div.innerHTML = `
+        <div class="card-box">
+          ${
+            showingFront
+              ? `${getFrontText(card)}<div class="small">Type: ${card.type} | Category: ${card.category}</div>`
+              : `${getBackHtml(card)}<div class="small">Type: ${card.type} | Category: ${card.category}</div>`
+          }
+        </div>
+        <div class="actions">
+          <button onclick="flipCard()">Flip</button>
+          <button onclick="nextCard()">Next</button>
+          <button onclick="deleteCurrentCard()">Delete</button>
+        </div>
+        <p class="small">${current + 1} / ${filtered.length}</p>
+      `;
+
+      list.innerHTML = cards.map((c, i) => `
+        <div class="list-item">
+          ${i + 1}. [${c.type}] ${c.baseEnglish} → ${c.baseArabic} (${c.category})
+        </div>
+      `).join("");
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+
+    updateFormSections();
+    updateCategoryFilter();
+    render();
+  </script>
 </body>
 </html>
