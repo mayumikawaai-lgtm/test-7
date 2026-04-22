@@ -77,7 +77,24 @@ function render() {
 
   div.innerHTML = `
     <div style="font-size: 24px; margin: 20px;">
-      ${showingEnglish ? card.en : card.ar}
+      div.innerHTML = `
+  <div style="
+    font-size: 32px;
+    margin: 40px;
+    padding: 30px;
+    border: 2px solid #333;
+    border-radius: 12px;
+    text-align: center;
+  ">
+    ${showingEnglish ? card.en : card.ar}
+  </div>
+
+  <button onclick="flipCard()">Flip</button>
+  <button onclick="nextCard()">Next</button>
+  <button onclick="deleteCurrentCard()">Delete</button>
+
+  <p>${current + 1} / ${cards.length}</p>
+`;
     </div>
     <button onclick="flipCard()">Flip</button>
     <button onclick="nextCard()">Next</button>
