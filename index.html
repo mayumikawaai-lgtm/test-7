@@ -14,7 +14,7 @@
     }
 
     .app {
-      max-width: 900px;
+      max-width: 950px;
       margin: 0 auto;
       background: white;
       padding: 24px;
@@ -52,6 +52,10 @@
       background: #666;
     }
 
+    button.danger {
+      background: #b42318;
+    }
+
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -78,6 +82,7 @@
       text-align: center;
       font-size: 30px;
       background: #fafafa;
+      line-height: 1.6;
     }
 
     .small {
@@ -89,6 +94,13 @@
     .actions {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .review-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
       gap: 10px;
       margin-top: 15px;
     }
@@ -116,8 +128,17 @@
       display: none;
     }
 
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #eee;
+      font-size: 12px;
+      margin: 4px;
+    }
+
     @media (max-width: 700px) {
-      .grid-2, .grid-3, .grid-4, .actions {
+      .grid-2, .grid-3, .grid-4, .actions, .review-actions {
         grid-template-columns: 1fr;
       }
 
@@ -176,25 +197,18 @@
       <div class="grid-2">
         <input id="pres_i_en" placeholder="I - English" />
         <input id="pres_i_ar" placeholder="I - Arabic" />
-
         <input id="pres_youm_en" placeholder="you (m) - English" />
         <input id="pres_youm_ar" placeholder="you (m) - Arabic" />
-
         <input id="pres_youf_en" placeholder="you (f) - English" />
         <input id="pres_youf_ar" placeholder="you (f) - Arabic" />
-
         <input id="pres_youpl_en" placeholder="you (pl) - English" />
         <input id="pres_youpl_ar" placeholder="you (pl) - Arabic" />
-
         <input id="pres_we_en" placeholder="we - English" />
         <input id="pres_we_ar" placeholder="we - Arabic" />
-
         <input id="pres_he_en" placeholder="he - English" />
         <input id="pres_he_ar" placeholder="he - Arabic" />
-
         <input id="pres_she_en" placeholder="she - English" />
         <input id="pres_she_ar" placeholder="she - Arabic" />
-
         <input id="pres_they_en" placeholder="they - English" />
         <input id="pres_they_ar" placeholder="they - Arabic" />
       </div>
@@ -203,25 +217,18 @@
       <div class="grid-2">
         <input id="past_i_en" placeholder="I - English" />
         <input id="past_i_ar" placeholder="I - Arabic" />
-
         <input id="past_youm_en" placeholder="you (m) - English" />
         <input id="past_youm_ar" placeholder="you (m) - Arabic" />
-
         <input id="past_youf_en" placeholder="you (f) - English" />
         <input id="past_youf_ar" placeholder="you (f) - Arabic" />
-
         <input id="past_youpl_en" placeholder="you (pl) - English" />
         <input id="past_youpl_ar" placeholder="you (pl) - Arabic" />
-
         <input id="past_we_en" placeholder="we - English" />
         <input id="past_we_ar" placeholder="we - Arabic" />
-
         <input id="past_he_en" placeholder="he - English" />
         <input id="past_he_ar" placeholder="he - Arabic" />
-
         <input id="past_she_en" placeholder="she - English" />
         <input id="past_she_ar" placeholder="she - Arabic" />
-
         <input id="past_they_en" placeholder="they - English" />
         <input id="past_they_ar" placeholder="they - Arabic" />
       </div>
@@ -229,14 +236,20 @@
 
     <button onclick="addCard()">Add Card</button>
 
-    <div class="grid-2">
-      <select id="filterCategory" onchange="render()">
+    <div class="grid-3">
+      <select id="filterCategory" onchange="resetStudyAndRender()">
         <option value="all">All categories</option>
       </select>
 
       <select id="studySide" onchange="render()">
         <option value="en">English first</option>
         <option value="ar">Arabic first</option>
+      </select>
+
+      <select id="studyMode" onchange="resetStudyAndRender()">
+        <option value="due">Due cards</option>
+        <option value="weak">Weak cards</option>
+        <option value="all">All cards</option>
       </select>
     </div>
 
@@ -252,9 +265,40 @@
     let current = 0;
     let showingFront = true;
 
-    const verbPronouns = [
-      "i", "youm", "youf", "youpl", "we", "he", "she", "they"
-    ];
+    const verbPronouns = ["i", "youm", "youf", "youpl", "we", "he", "she", "they"];
+
+    function nowIso() {
+      return new Date().toISOString();
+    }
+
+    function addDays(days) {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      return d.toISOString();
+    }
+
+    function buildLearningMeta() {
+      return {
+        dueAt: nowIso(),
+        intervalDays: 0,
+        ease: 2.5,
+        consecutiveCorrect: 0,
+        lapses: 0,
+        reviewCount: 0,
+        weak: false,
+        lastReviewedAt: null
+      };
+    }
+
+    function normalizeCards() {
+      cards = cards.map(card => ({
+        ...card,
+        learning: {
+          ...buildLearningMeta(),
+          ...(card.learning || {})
+        }
+      }));
+    }
 
     function save() {
       localStorage.setItem("cards", JSON.stringify(cards));
@@ -265,12 +309,6 @@
       document.getElementById("nounSection").classList.toggle("hidden", type !== "noun");
       document.getElementById("adjectiveSection").classList.toggle("hidden", type !== "adjective");
       document.getElementById("verbSection").classList.toggle("hidden", type !== "verb");
-    }
-
-    function getFilteredCards() {
-      const selected = document.getElementById("filterCategory").value;
-      if (selected === "all") return cards;
-      return cards.filter(card => (card.category || "general") === selected);
     }
 
     function updateCategoryFilter() {
@@ -293,6 +331,30 @@
       }
     }
 
+    function getStudyCards() {
+      const category = document.getElementById("filterCategory").value;
+      const mode = document.getElementById("studyMode").value;
+      const now = new Date();
+
+      return cards.filter(card => {
+        const categoryOk = category === "all" || (card.category || "general") === category;
+        if (!categoryOk) return false;
+
+        const due = new Date(card.learning?.dueAt || nowIso()) <= now;
+        const weak = !!card.learning?.weak;
+
+        if (mode === "all") return true;
+        if (mode === "weak") return weak;
+        return due;
+      });
+    }
+
+    function resetStudyAndRender() {
+      current = 0;
+      showingFront = true;
+      render();
+    }
+
     function addCard() {
       const type = document.getElementById("wordType").value;
       const baseEnglish = document.getElementById("baseEnglish").value.trim();
@@ -308,7 +370,8 @@
         type,
         baseEnglish,
         baseArabic,
-        category
+        category,
+        learning: buildLearningMeta()
       };
 
       if (type === "noun") {
@@ -365,12 +428,9 @@
 
       cards.push(card);
       clearForm();
-      current = getFilteredCards().length;
-      showingFront = true;
-
       save();
       updateCategoryFilter();
-      render();
+      resetStudyAndRender();
     }
 
     function clearForm() {
@@ -395,7 +455,7 @@
     }
 
     function nextCard() {
-      const filtered = getFilteredCards();
+      const filtered = getStudyCards();
       if (filtered.length === 0) return;
       current = (current + 1) % filtered.length;
       showingFront = true;
@@ -403,14 +463,14 @@
     }
 
     function flipCard() {
-      const filtered = getFilteredCards();
+      const filtered = getStudyCards();
       if (filtered.length === 0) return;
       showingFront = !showingFront;
       render();
     }
 
     function deleteCurrentCard() {
-      const filtered = getFilteredCards();
+      const filtered = getStudyCards();
       if (filtered.length === 0) return;
 
       const cardToDelete = filtered[current];
@@ -420,13 +480,9 @@
         cards.splice(realIndex, 1);
       }
 
-      const newFiltered = getFilteredCards();
-      if (current >= newFiltered.length) current = 0;
-      showingFront = true;
-
       save();
       updateCategoryFilter();
-      render();
+      resetStudyAndRender();
     }
 
     function getFrontText(card) {
@@ -441,77 +497,158 @@
 
       if (card.type === "noun") {
         return `
-          <div><strong>1:</strong> ${card.forms.one[first]} → ${card.forms.one[second]}</div>
-          <div><strong>2:</strong> ${card.forms.two[first]} → ${card.forms.two[second]}</div>
-          <div><strong>3:</strong> ${card.forms.three[first]} → ${card.forms.three[second]}</div>
-          <div><strong>4–10:</strong> ${card.forms.fourToTen[first]} → ${card.forms.fourToTen[second]}</div>
+          <div><strong>1:</strong> ${card.forms.one[first] || ""} → ${card.forms.one[second] || ""}</div>
+          <div><strong>2:</strong> ${card.forms.two[first] || ""} → ${card.forms.two[second] || ""}</div>
+          <div><strong>3:</strong> ${card.forms.three[first] || ""} → ${card.forms.three[second] || ""}</div>
+          <div><strong>4–10:</strong> ${card.forms.fourToTen[first] || ""} → ${card.forms.fourToTen[second] || ""}</div>
         `;
       }
 
       if (card.type === "adjective") {
         return `
-          <div><strong>Masculine:</strong> ${card.forms.masculine[first]} → ${card.forms.masculine[second]}</div>
-          <div><strong>Feminine:</strong> ${card.forms.feminine[first]} → ${card.forms.feminine[second]}</div>
+          <div><strong>Masculine:</strong> ${card.forms.masculine[first] || ""} → ${card.forms.masculine[second] || ""}</div>
+          <div><strong>Feminine:</strong> ${card.forms.feminine[first] || ""} → ${card.forms.feminine[second] || ""}</div>
         `;
       }
 
       return `
         <div><strong>Present</strong></div>
-        <div>I: ${card.forms.present.i[first]} → ${card.forms.present.i[second]}</div>
-        <div>you (m): ${card.forms.present.youm[first]} → ${card.forms.present.youm[second]}</div>
-        <div>you (f): ${card.forms.present.youf[first]} → ${card.forms.present.youf[second]}</div>
-        <div>you (pl): ${card.forms.present.youpl[first]} → ${card.forms.present.youpl[second]}</div>
-        <div>we: ${card.forms.present.we[first]} → ${card.forms.present.we[second]}</div>
-        <div>he: ${card.forms.present.he[first]} → ${card.forms.present.he[second]}</div>
-        <div>she: ${card.forms.present.she[first]} → ${card.forms.present.she[second]}</div>
-        <div>they: ${card.forms.present.they[first]} → ${card.forms.present.they[second]}</div>
+        <div>I: ${card.forms.present.i[first] || ""} → ${card.forms.present.i[second] || ""}</div>
+        <div>you (m): ${card.forms.present.youm[first] || ""} → ${card.forms.present.youm[second] || ""}</div>
+        <div>you (f): ${card.forms.present.youf[first] || ""} → ${card.forms.present.youf[second] || ""}</div>
+        <div>you (pl): ${card.forms.present.youpl[first] || ""} → ${card.forms.present.youpl[second] || ""}</div>
+        <div>we: ${card.forms.present.we[first] || ""} → ${card.forms.present.we[second] || ""}</div>
+        <div>he: ${card.forms.present.he[first] || ""} → ${card.forms.present.he[second] || ""}</div>
+        <div>she: ${card.forms.present.she[first] || ""} → ${card.forms.present.she[second] || ""}</div>
+        <div>they: ${card.forms.present.they[first] || ""} → ${card.forms.present.they[second] || ""}</div>
         <br>
         <div><strong>Past</strong></div>
-        <div>I: ${card.forms.past.i[first]} → ${card.forms.past.i[second]}</div>
-        <div>you (m): ${card.forms.past.youm[first]} → ${card.forms.past.youm[second]}</div>
-        <div>you (f): ${card.forms.past.youf[first]} → ${card.forms.past.youf[second]}</div>
-        <div>you (pl): ${card.forms.past.youpl[first]} → ${card.forms.past.youpl[second]}</div>
-        <div>we: ${card.forms.past.we[first]} → ${card.forms.past.we[second]}</div>
-        <div>he: ${card.forms.past.he[first]} → ${card.forms.past.he[second]}</div>
-        <div>she: ${card.forms.past.she[first]} → ${card.forms.past.she[second]}</div>
-        <div>they: ${card.forms.past.they[first]} → ${card.forms.past.they[second]}</div>
+        <div>I: ${card.forms.past.i[first] || ""} → ${card.forms.past.i[second] || ""}</div>
+        <div>you (m): ${card.forms.past.youm[first] || ""} → ${card.forms.past.youm[second] || ""}</div>
+        <div>you (f): ${card.forms.past.youf[first] || ""} → ${card.forms.past.youf[second] || ""}</div>
+        <div>you (pl): ${card.forms.past.youpl[first] || ""} → ${card.forms.past.youpl[second] || ""}</div>
+        <div>we: ${card.forms.past.we[first] || ""} → ${card.forms.past.we[second] || ""}</div>
+        <div>he: ${card.forms.past.he[first] || ""} → ${card.forms.past.he[second] || ""}</div>
+        <div>she: ${card.forms.past.she[first] || ""} → ${card.forms.past.she[second] || ""}</div>
+        <div>they: ${card.forms.past.they[first] || ""} → ${card.forms.past.they[second] || ""}</div>
       `;
+    }
+
+    function rateCurrentCard(scoreType) {
+      const filtered = getStudyCards();
+      if (filtered.length === 0) return;
+
+      const card = filtered[current];
+      const learning = card.learning || buildLearningMeta();
+
+      let intervalDays = learning.intervalDays || 0;
+      let ease = learning.ease || 2.5;
+      let consecutiveCorrect = learning.consecutiveCorrect || 0;
+      let lapses = learning.lapses || 0;
+      let weak = learning.weak || false;
+
+      if (scoreType === "again") {
+        intervalDays = 0;
+        consecutiveCorrect = 0;
+        lapses += 1;
+        weak = true;
+        card.learning.dueAt = nowIso();
+      }
+
+      if (scoreType === "hard") {
+        consecutiveCorrect += 1;
+        intervalDays = Math.max(1, Math.round(intervalDays || 1));
+        ease = Math.max(1.3, ease - 0.15);
+        weak = true;
+        card.learning.dueAt = addDays(intervalDays);
+      }
+
+      if (scoreType === "good") {
+        consecutiveCorrect += 1;
+        intervalDays = consecutiveCorrect <= 1 ? 1 : Math.max(2, Math.round((intervalDays || 1) * ease));
+        card.learning.dueAt = addDays(intervalDays);
+      }
+
+      if (scoreType === "easy") {
+        consecutiveCorrect += 1;
+        ease = Math.min(3.2, ease + 0.15);
+        intervalDays = consecutiveCorrect <= 1 ? 2 : Math.max(3, Math.round((intervalDays || 2) * ease * 1.15));
+        weak = false;
+        card.learning.dueAt = addDays(intervalDays);
+      }
+
+      card.learning.intervalDays = intervalDays;
+      card.learning.ease = ease;
+      card.learning.consecutiveCorrect = consecutiveCorrect;
+      card.learning.lapses = lapses;
+      card.learning.reviewCount = (card.learning.reviewCount || 0) + 1;
+      card.learning.lastReviewedAt = nowIso();
+      card.learning.weak = weak;
+
+      save();
+      showingFront = true;
+      current = 0;
+      render();
     }
 
     function render() {
       const div = document.getElementById("cards");
       const list = document.getElementById("list");
-      const filtered = getFilteredCards();
+      const filtered = getStudyCards();
 
       if (filtered.length === 0) {
-        div.innerHTML = "<p>No cards yet</p>";
-        list.innerHTML = cards.length === 0 ? "<p>No cards saved yet</p>" : "<p>No cards in this category</p>";
-        return;
+        div.innerHTML = "<p>No cards in this study queue</p>";
+      } else {
+        if (current >= filtered.length) current = 0;
+
+        const card = filtered[current];
+        const dueText = card.learning?.dueAt ? new Date(card.learning.dueAt).toLocaleDateString() : "today";
+
+        div.innerHTML = `
+          <div class="card-box">
+            ${
+              showingFront
+                ? `${getFrontText(card)}<div class="small">Type: ${card.type} | Category: ${card.category}</div>`
+                : `${getBackHtml(card)}<div class="small">Type: ${card.type} | Category: ${card.category}</div>`
+            }
+          </div>
+
+          <div class="small">
+            <span class="pill">Due: ${dueText}</span>
+            <span class="pill">Reviews: ${card.learning?.reviewCount || 0}</span>
+            <span class="pill">Weak: ${card.learning?.weak ? "yes" : "no"}</span>
+          </div>
+
+          <div class="actions">
+            <button onclick="flipCard()">Flip</button>
+            <button onclick="nextCard()">Next</button>
+            <button class="danger" onclick="deleteCurrentCard()">Delete</button>
+          </div>
+
+          <div class="review-actions">
+            <button class="danger" onclick="rateCurrentCard('again')">Again</button>
+            <button class="secondary" onclick="rateCurrentCard('hard')">Hard</button>
+            <button onclick="rateCurrentCard('good')">Good</button>
+            <button onclick="rateCurrentCard('easy')">Easy</button>
+          </div>
+
+          <p class="small">${current + 1} / ${filtered.length}</p>
+        `;
       }
 
-      if (current >= filtered.length) current = 0;
-
-      const card = filtered[current];
-
-      div.innerHTML = `
-        <div class="card-box">
-          ${
-            showingFront
-              ? `${getFrontText(card)}<div class="small">Type: ${card.type} | Category: ${card.category}</div>`
-              : `${getBackHtml(card)}<div class="small">Type: ${card.type} | Category: ${card.category}</div>`
-          }
-        </div>
-        <div class="actions">
-          <button onclick="flipCard()">Flip</button>
-          <button onclick="nextCard()">Next</button>
-          <button onclick="deleteCurrentCard()">Delete</button>
-        </div>
-        <p class="small">${current + 1} / ${filtered.length}</p>
-      `;
+      if (cards.length === 0) {
+        list.innerHTML = "<p>No cards saved yet</p>";
+        return;
+      }
 
       list.innerHTML = cards.map((c, i) => `
         <div class="list-item">
           ${i + 1}. [${c.type}] ${c.baseEnglish} → ${c.baseArabic} (${c.category})
+          <div class="small">
+            Due: ${c.learning?.dueAt ? new Date(c.learning.dueAt).toLocaleDateString() : "today"} |
+            Weak: ${c.learning?.weak ? "yes" : "no"} |
+            Reviews: ${c.learning?.reviewCount || 0}
+          </div>
         </div>
       `).join("");
     }
@@ -520,8 +657,10 @@
       navigator.serviceWorker.register("/sw.js");
     }
 
+    normalizeCards();
     updateFormSections();
     updateCategoryFilter();
+    save();
     render();
   </script>
 </body>
