@@ -12,7 +12,7 @@
 
 <input id="english" placeholder="English"><br><br>
 <input id="arabic" placeholder="Arabic"><br><br>
-
+<input id="category" placeholder="Category (e.g. food, travel)"><br><br>
 <button onclick="addCard()">Add Card</button>
 
 <h2>Cards</h2>
@@ -32,7 +32,8 @@ function addCard() {
   const en = document.getElementById("english").value.trim();
   const ar = document.getElementById("arabic").value.trim();
   if (!en || !ar) return;
-  cards.push({ en, ar });
+  const cat = document.getElementById("category").value || "general";
+  cards.push({ en, ar, cat });
   document.getElementById("english").value = "";
   document.getElementById("arabic").value = "";
   current = cards.length - 1;
@@ -87,6 +88,7 @@ function render() {
     text-align: center;
   ">
     ${showingEnglish ? card.en : card.ar}
+    <br><small>(${card.cat})</small>
   </div>
 
   <button onclick="flipCard()">Flip</button>
