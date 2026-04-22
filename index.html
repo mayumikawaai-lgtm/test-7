@@ -105,7 +105,7 @@ function render() {
   `;
 
   list.innerHTML = cards
-    .map((c, i) => `<p>${i + 1}. ${c.en} → ${c.ar}</p>`)
+    .map((c, i) => `<p>${i + 1}. ${c.en} → ${c.ar} (${c.cat})</p>`)
     .join("");
 }
 
